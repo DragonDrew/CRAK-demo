@@ -4,7 +4,7 @@
 
 If you run a few Linux boxes and a NAS, you probably have rsync scripts in cron somewhere, a few of them failing silently. CRAK keeps the scripts on each machine (so backups still run when CRAK is down), and gives you one place to see every backup, every result and every restore.
 
-These screenshots come from a test setup with made-up hosts (`demo-web`, `demo-pi`, `demo-nas`), a made-up destination (`Demo NAS`) and made-up data. They're from CRAK **0.5.1**, in dark mode (the default).
+These screenshots come from a test setup with made-up hosts (`demo-web`, `demo-pi`, `demo-nas`), a made-up destination (`Demo NAS`), made-up people (`maria` and `sam`) and made-up data. They're from CRAK **0.7.0**, in dark mode (the default).
 
 ---
 
@@ -13,7 +13,7 @@ These screenshots come from a test setup with made-up hosts (`demo-web`, `demo-p
 - **Backups run from cron on each machine**, not from the CRAK server. So they keep running even when CRAK is down.
 - **CRAK does the boring bits**: it builds the rsync commands, writes the cron lines, copies them to each host, and keeps the history.
 - **Nothing is locked in.** Each job is a readable shell script on its host, and the backups are ordinary folders on the destination.
-- **You can see everything in one place**: every run, its result in plain words, its log, and every alert.
+- **You can see everything in one place**: every run, its result in plain words, its log, and every alert, and who is looking at each one.
 
 ---
 
@@ -41,7 +41,20 @@ These screenshots come from a test setup with made-up hosts (`demo-web`, `demo-p
 - Run-time history per job, and a flag for runs that are much quicker or slower than usual.
 - **Verify** compares a backup with its source by checksum, on demand or on a schedule, and reports damaged files.
 - Alerts for backups that failed, didn't run, were lost, or are damaged; hosts that are offline; destinations that can't be reached; and a job whose "run as" user is missing.
-- Discord notifications, and Prometheus metrics at `/metrics`.
+- **Acknowledge and assign** alerts. Someone can say they're looking at one, and assign it to another Operator or Admin, so it's clear who has it. The assignee is emailed if an email channel is set up.
+- **Notification channels**, up to 20: Discord, Slack, Microsoft Teams, ntfy and email. Each channel chooses which alerts it gets, and whether it also gets news such as pauses.
+- **Prometheus metrics** at `/metrics`, optionally behind a token.
+
+### Users and sign-in
+- Several people can sign in, with three roles: **Viewer** (sees everything, changes nothing), **Operator** (also runs, verifies, pauses and handles alerts) and **Admin** (changes anything, restores files, manages users).
+- **Two-factor sign-in** with an authenticator app, with recovery codes.
+- **Single sign-on** through an identity provider (OpenID Connect), with the provider's groups mapped to CRAK's roles.
+- **Personal API tokens** for scripts and tools, each with a role and an expiry.
+- An **audit log** of every change and sign-in, with who made it and from where, kept for a year.
+
+### Log forwarding
+- The audit log, and optionally alerts and run results, go to a **syslog** server (RFC 5424, over UDP, TCP or TLS) or to a **SIEM** over HTTPS, as JSON, NDJSON or Splunk HEC.
+- If a destination can't be reached, CRAK keeps the events for up to 7 days and sends them once it can.
 
 ### Restore
 - Pick the host a backup came from, the job, and the copy (a snapshot or the mirror).
@@ -53,14 +66,14 @@ These screenshots come from a test setup with made-up hosts (`demo-web`, `demo-p
 - Add a host with a compose file and a one-time token. CRAK shows what each host is ready for (rsync, SSH, cron, flock).
 - A destination is any machine with SSH and rsync, such as a NAS. CRAK doesn't need to be installed on it.
 - **Install key** once per host (the password is typed once, never stored), then **Test connection** checks login, rsync, write access, hard links, free space and extended attributes.
+- CRAK retries a destination that doesn't answer straight away, such as a NAS whose disks are asleep, and only fails a run after four tries.
 - **Replace with…** moves a dead host's jobs to its replacement, with their history, notes, pauses and destination folders.
 
 ### Operations and settings
-- **Settings** in four groups: backups, notifications and alerts, integrations (Prometheus, export and import), and the account (password and audit log).
+- **Settings** in five groups: backups, notifications and alerts, integrations (log forwarding, Prometheus, export and import), users, and your account (two-factor sign-in, password, API tokens and the audit log).
 - **YAML export and import** of jobs, groups, destinations and scripts, so a job set can live in Git.
 - **CRAK backs itself up**, on a schedule, to a destination you choose.
-- **Audit log** of changes and sign-ins, with who made them and from where, kept for a year.
-- A single admin login, meant for a private network.
+- **HTTPS** through a reverse proxy, with a security guide.
 
 ---
 
@@ -84,7 +97,7 @@ Every change goes through the server, which sends it to the agent. CRAK never ru
 
 ![Dashboard](screenshots/01-dashboard.png)
 
-One page for "is anything on fire?": hosts online, open alerts, jobs whose last run went wrong, every run of the last 30 days, and each job's last result and next run.
+One page for "is anything on fire?": hosts online, open alerts, jobs whose last run went wrong, every run of the last 30 days, and each job's last result and next run. The open alert here has been acknowledged by the owner and assigned to Sam, with a note saying why.
 
 ### Hosts
 
@@ -182,7 +195,43 @@ Pick the host, the job and the copy, then tick what to restore from the tree of 
 
 ![Settings](screenshots/14-settings.png)
 
-Four groups: backups, notifications and alerts, integrations (Prometheus, export and import), and the account (password and audit log).
+Five groups: backups, notifications and alerts, integrations, users, and your account. The cards below are from the groups opened on their own.
+
+#### Notifications and alerts
+
+![Notification channels](screenshots/24-settings-notifications.png)
+
+Each channel has its own alerts and its own news setting. This demo has an ntfy channel; **Add** offers Discord, Slack, Microsoft Teams and email too. A channel shows **on**, **off**, **failing** (with the last error, and it keeps trying) or **stopped** (the service said the webhook is gone).
+
+#### Integrations
+
+![Log forwarding](screenshots/25-settings-log-forwarding.png)
+
+Syslog or a SIEM receives the audit log, and optionally alerts and run results, as they happen. This demo sends them to a syslog receiver over UDP.
+
+#### Users
+
+![Users](screenshots/26-settings-users.png)
+
+Everyone who can sign in, with their role. A new person gets a temporary password and must choose their own at first sign-in. **Disable** stops someone signing in without removing their history.
+
+![Single sign-on](screenshots/27-settings-single-sign-on.png)
+
+Sign in through an identity provider that speaks OpenID Connect, with the provider's groups mapped to roles. The demo has no provider, so this card shows the settings only. Single sign-on has been tested with a test provider, not yet with a live one.
+
+#### Your account
+
+![Two-factor sign-in](screenshots/28-settings-two-factor.png)
+
+Two-factor sign-in with an authenticator app, with 10 single-use recovery codes. An Admin can also require it for everyone.
+
+![API tokens](screenshots/29-settings-api-tokens.png)
+
+A token for a script or tool, with its own role and expiry. It's shown once when it's made, and an Admin can see and revoke everyone's.
+
+![Audit log](screenshots/30-settings-audit-log.png)
+
+Sign-ins and changes, newest first, kept for a year. Filter by action or by a range of days, and export everything that matches as CSV.
 
 ---
 
@@ -190,4 +239,5 @@ Four groups: backups, notifications and alerts, integrations (Prometheus, export
 
 - **Not a backup format.** The backups are plain folders on your destination, so you don't need CRAK to read them.
 - **Not for other platforms.** The server and agents are Linux amd64 only.
-- **Not for the internet.** It's meant for a private network, with one admin login.
+- **Not for the internet.** It's meant for a private network, or behind a reverse proxy with HTTPS. Roles apply to the whole install, not per host or per job.
+- **Not all tested against live services.** Slack, Microsoft Teams, single sign-on and SIEM receivers have been checked only against local copies or test providers. Each one can be tried from its own card in Settings.
