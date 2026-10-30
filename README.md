@@ -225,6 +225,22 @@ Here, the first step is open: the backup is the `app-data` snapshot from `demo-w
 
 Open alerts, failures first. The one here has been acknowledged by the owner, with a note, and assigned to Sam.
 
+### Themes
+
+Each user picks a theme and a colour mode (light, dark or their device's), and a density (comfortable or compact). These three show the same dashboard in the themes built in or imported, in each of their modes and densities.
+
+![CRAK theme](screenshots/theme-crak.png)
+
+CRAK, the built-in theme: light and dark, comfortable and compact.
+
+![Terminal theme](screenshots/theme-terminal.png)
+
+Terminal, the built-in monospace theme. It has no light mode, so only the dark versions are shown.
+
+![Amber Mono theme](screenshots/theme-amber-mono.png)
+
+Amber Mono, imported from a tweakcn export, in light and dark, comfortable and compact.
+
 ### Settings
 
 ![Settings](screenshots/14-settings.png)
