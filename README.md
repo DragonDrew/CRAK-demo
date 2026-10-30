@@ -107,7 +107,7 @@ Every change goes through the server, which sends it to the agent. CRAK never ru
 
 ![Dashboard](screenshots/01-dashboard.png)
 
-One page for "is anything on fire?": hosts online, open alerts, jobs whose last run went wrong, every run of the last 30 days, and each job's last result and next run. The open alert here has been acknowledged by the owner and assigned to Sam, with a note saying why.
+One page for "is anything on fire?": hosts online, open alerts, jobs whose last run went wrong, every run of the last 30 days, and each job's last result and next run. The first alert here has been acknowledged by the owner, with a note saying why, and it's assigned to Sam. The Needs attention rows line up on the right: each row ends in one link, and a paused job's Resume sits just before its View job link.
 
 ### Hosts
 
